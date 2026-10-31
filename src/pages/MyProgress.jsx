@@ -13,23 +13,23 @@ export default function MyProgress({ onNavigate }) {
     .map(([id, item]) => ({ id, ...item }))
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <BilingualText
         en="My Progress"
         ur="میری کارکردگی"
-        enClass="text-3xl font-bold text-primary"
-        urClass="text-3xl font-bold text-primary"
+        enClass="text-2xl md:text-3xl font-bold text-primary"
+        urClass="text-2xl md:text-3xl font-bold text-primary"
       />
 
-      <div className="rounded-2xl border border-line bg-surface p-6 shadow-xs">
-        <p className="mb-2 font-semibold">
+      <div className="rounded-2xl border border-line bg-surface p-4 shadow-xs">
+        <p className="mb-1.5 font-bold text-sm">
           {completedCount} of {totalLessons} completed /{' '}
-          <span lang="ur" dir="rtl" className="urdu">
+          <span lang="ur" dir="rtl" className="urdu text-sm">
             {totalLessons} میں سے {completedCount} مکمل
           </span>
         </p>
-        <div className="h-3 w-full rounded-full bg-mint-strong">
-          <div className="h-3 rounded-full bg-action transition-all" style={{ width: `${percent}%` }} />
+        <div className="h-2.5 w-full rounded-full bg-mint-strong">
+          <div className="h-2.5 rounded-full bg-action transition-all" style={{ width: `${percent}%` }} />
         </div>
       </div>
 
@@ -37,57 +37,54 @@ export default function MyProgress({ onNavigate }) {
         <BilingualText
           en="Your learning journey starts here. Practise a lesson to see your progress."
           ur="آپ کا سیکھنے کا سفر یہاں سے شروع ہوتا ہے۔ کارکردگی دیکھنے کے لیے کسی سبق کی مشق کریں۔"
+          enClass="text-sm text-muted font-medium"
+          urClass="text-sm text-muted font-medium"
         />
       )}
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3">
         {/* Core WhatsApp Lesson */}
-        <div className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-6 md:flex-row md:items-center md:justify-between shadow-xs">
+        <div className="flex flex-col gap-2 rounded-2xl border border-line bg-surface p-4 md:flex-row md:items-center md:justify-between shadow-xs">
           <div>
             <BilingualText
               en="How to make a WhatsApp video call"
               ur="واٹس ایپ پر ویڈیو کال کیسے کریں"
-              enClass="font-semibold text-primary text-lg"
-              urClass="font-semibold text-primary text-lg"
+              enClass="font-bold text-primary text-base md:text-lg"
+              urClass="font-bold text-primary text-base md:text-lg"
             />
-            <p className="mt-1 text-sm text-muted">
+            <p className="mt-0.5 text-xs text-muted font-medium">
               {whatsappDone ? 'Completed ✓ / مکمل' : 'Available for practice / مشق کے لیے دستیاب'}
             </p>
           </div>
           <button
             type="button"
             onClick={() => onNavigate('lesson')}
-            className="min-h-12 rounded-xl bg-action px-5 py-3 font-semibold text-white hover:bg-primary active:scale-[0.98]"
+            className="min-h-10 rounded-xl bg-action px-4 py-2 text-sm font-bold text-white hover:bg-primary active:scale-[0.98] transition-colors"
           >
-            {whatsappDone ? (
-              <BilingualText as="span" center en="Practise Again" ur="دوبارہ مشق کریں" />
-            ) : (
-              <BilingualText as="span" center en="Start Lesson" ur="سبق شروع کریں" />
-            )}
+            <BilingualText as="span" center en={whatsappDone ? 'Practise Again' : 'Start'} ur={whatsappDone ? 'دوبارہ مشق کریں' : 'شروع کریں'} />
           </button>
         </div>
 
-        {/* Dynamic AI / Custom Completed Lessons */}
+        {/* Dynamic AI Completed Lessons */}
         {otherCompleted.map((item) => (
           <div
             key={item.id}
-            className="flex flex-col gap-2 rounded-2xl border border-line bg-surface p-6 shadow-xs"
+            className="flex flex-col gap-2 rounded-2xl border border-line bg-surface p-4 md:flex-row md:items-center md:justify-between shadow-xs animate-fadeIn"
           >
-            <div className="flex items-center justify-between">
-              <span className="rounded-full bg-mint-strong px-3 py-1 text-xs font-semibold text-primary">
-                AI Custom Lesson / اپنی پسند کا سبق
-              </span>
-              <span className="text-xs text-muted">
-                {item.completedAt ? new Date(item.completedAt).toLocaleDateString() : ''}
-              </span>
+            <div>
+              <BilingualText
+                en={item.titleEn || 'Custom AI Lesson'}
+                ur={item.titleUr || 'اے آئی مشقی سبق'}
+                enClass="font-bold text-primary text-base"
+                urClass="font-bold text-primary text-base"
+              />
+              <p className="mt-0.5 text-xs text-muted font-medium">
+                Completed on {new Date(item.completedAt).toLocaleDateString()} ✓ / مکمل
+              </p>
             </div>
-            <BilingualText
-              en={item.titleEn || 'Interactive Lesson'}
-              ur={item.titleUr || 'مشقی سبق'}
-              enClass="font-semibold text-primary text-lg"
-              urClass="font-semibold text-primary text-lg"
-            />
-            <p className="text-sm font-medium text-emerald-700">Completed ✓ / مکمل</p>
+            <span className="text-xs font-bold text-action bg-mint px-2.5 py-1 rounded-lg w-fit">
+              Mastered / سیکھ لیا
+            </span>
           </div>
         ))}
       </div>

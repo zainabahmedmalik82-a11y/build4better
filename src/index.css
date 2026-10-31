@@ -8,7 +8,7 @@
   --color-page: #F8FAF8;
   --color-surface: #FFFFFF;
   --color-ink: #263330;
-  --color-muted: #65736E;
+  --color-muted: #3B4A45;
   --color-line: #D5E0DC;
   --color-danger: #B54747;
   --color-warning: #FFF4DF;
@@ -21,11 +21,33 @@ body {
   color: var(--color-ink);
   font-family: var(--font-sans);
   font-size: 18px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+}
+
+button {
+  font-weight: 600;
 }
 
 .urdu {
   font-family: "Noto Nastaliq Urdu", "Noto Sans Arabic", serif;
-  line-height: 2.2;
+  font-size: 1.1em;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+h1 .urdu, h2 .urdu, h3 .urdu, h4 .urdu {
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+::placeholder, input::placeholder, textarea::placeholder {
+  color: #4A5B55;
+  opacity: 1;
 }
 
 :focus-visible {

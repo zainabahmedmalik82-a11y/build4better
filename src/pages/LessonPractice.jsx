@@ -1,9 +1,9 @@
-import { useState } from 'react'
-import { ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { ArrowLeft, CheckCircle2, AlertCircle, Volume2, VolumeX, RotateCcw, AlertTriangle } from 'lucide-react'
 import BilingualText from '../components/BilingualText'
 import PhoneSimulator from '../components/PhoneSimulator'
-import VoiceControls from '../components/VoiceControls'
 import useProgress from '../hooks/useProgress'
+import useSpeech from '../hooks/useSpeech'
 
 const DEFAULT_PRESET_LESSON = {
   title_en: 'How to make a WhatsApp video call',
@@ -91,19 +91,59 @@ export default function LessonPractice({ onNavigate, lessonData }) {
   const [stepIndex, setStepIndex] = useState(0)
   // Stages: 'SHOW_ME' | 'LET_ME_TRY' | 'CORRECT_ME' | 'DO_IT_MYSELF' | 'DONE'
   const [stage, setStage] = useState('SHOW_ME')
+  const [guidedMode, setGuidedMode] = useState(false)
   const [activeHint, setActiveHint] = useState(null)
   const [lastSuccess, setLastSuccess] = useState(null)
   const [isSelfPractice, setIsSelfPractice] = useState(false)
+
   const { markComplete } = useProgress()
+  const { speak, stop, replay, toggleMute, isMuted, status: speechStatus, available: speechAvailable, checked: speechChecked } = useSpeech()
 
   const currentStep = steps[stepIndex] || steps[0]
   const totalSteps = steps.length
   const stepNumber = stepIndex + 1
 
-  // Highlight rule: only highlighted during SHOW_ME stage
-  const highlightId = stage === 'SHOW_ME' ? currentStep.correct_button_id : null
-  // Interactive when in LET_ME_TRY or DO_IT_MYSELF
+  const advanceTimerRef = useRef(null)
+
+  // Cleanup speech and timers on unmount
+  useEffect(() => {
+    return () => {
+      stop()
+      if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current)
+    }
+  }, [stop])
+
+  // In guided mode or self-practice, speak step instruction when stepIndex changes (and guidedMode is true)
+  useEffect(() => {
+    if (!guidedMode) return
+    if (stage === 'LET_ME_TRY' || stage === 'DO_IT_MYSELF') {
+      const textToSpeak = currentStep?.instruction_ur
+      if (textToSpeak) {
+        speak(textToSpeak)
+      }
+    }
+  }, [stepIndex, stage, guidedMode, currentStep, speak])
+
+  // Determine button highlight
+  // - In SHOW_ME: highlight correct button
+  // - In guided mode (LET_ME_TRY): softly highlight correct button
+  // - In DO_IT_MYSELF: no highlight (null)
+  const highlightId =
+    stage === 'SHOW_ME' || (guidedMode && stage === 'LET_ME_TRY' && !isSelfPractice)
+      ? currentStep.correct_button_id
+      : null
+
+  // Interactive phone:
+  // Interactive whenever in guided mode (LET_ME_TRY), or during self practice
   const isInteractive = stage === 'LET_ME_TRY' || stage === 'DO_IT_MYSELF'
+
+  function handleStartGuidedPractice() {
+    // User pressed "Let Me Try" for the first time
+    setGuidedMode(true)
+    setStage('LET_ME_TRY')
+    // Trigger first speech from real user interaction
+    speak(currentStep.instruction_ur)
+  }
 
   function handleButtonAction(buttonId) {
     if (!isInteractive) return
@@ -111,285 +151,338 @@ export default function LessonPractice({ onNavigate, lessonData }) {
     if (buttonId === currentStep.correct_button_id) {
       // Correct button tapped!
       setActiveHint(null)
-      setLastSuccess({
+      const successData = {
         en: currentStep.success_en || 'Well done! That was correct.',
         ur: currentStep.success_ur || 'شاباش! یہ بالکل درست تھا۔',
-      })
+      }
+      setLastSuccess(successData)
+
+      // Speak success in Urdu
+      speak(successData.ur)
 
       const isLastStep = stepIndex >= totalSteps - 1
 
       if (!isSelfPractice) {
-        // In initial guided practice phase
+        // Guided practice phase
         if (isLastStep) {
-          // Finished guided practice, start "Let Me Do It Myself"
-          setTimeout(() => {
+          // Finished guided mode -> Transition to Stage 4: "Let Me Do It Myself"
+          advanceTimerRef.current = setTimeout(() => {
             setLastSuccess(null)
             setIsSelfPractice(true)
             setStepIndex(0)
             setStage('DO_IT_MYSELF')
-          }, 900)
+            speak('اب بغیر کسی اشارے کے خود مکمل سبق دہرائیں۔')
+          }, 1500)
         } else {
-          // Advance to next guided step
-          setTimeout(() => {
+          // Auto-advance to next step in guided mode (remains interactive and tryable!)
+          advanceTimerRef.current = setTimeout(() => {
             setLastSuccess(null)
             setStepIndex((idx) => idx + 1)
-            setStage('SHOW_ME')
-          }, 900)
+            setStage('LET_ME_TRY')
+          }, 1500)
         }
       } else {
-        // In "Let Me Do It Myself" phase
+        // "Let Me Do It Myself" phase
         if (isLastStep) {
-          // Completed entire lesson!
-          setTimeout(() => {
+          // Entire lesson finished!
+          advanceTimerRef.current = setTimeout(() => {
             setLastSuccess(null)
             setStage('DONE')
-            // Save progress with only title and date (no user problem text)
+            speak('مبارک ہو! آپ نے پورا سبق کامیابی سے مکمل کر لیا ہے۔')
             const lessonKey = `lesson_${lesson.title_en || 'custom'}_${Date.now()}`
             markComplete(lessonKey, {
               titleEn: lesson.title_en,
               titleUr: lesson.title_ur,
             })
-          }, 900)
+          }, 1500)
         } else {
-          setTimeout(() => {
+          advanceTimerRef.current = setTimeout(() => {
             setLastSuccess(null)
             setStepIndex((idx) => idx + 1)
             setStage('DO_IT_MYSELF')
-          }, 900)
+          }, 1500)
         }
       }
     } else {
-      // Incorrect button tapped -> Gentle correction
+      // Incorrect button tapped -> Gentle correction (Correct Me)
       const hint = currentStep.hints?.[buttonId]
       const fallbackHint = {
         en: "That wasn't quite it, and that's okay. Let's try again.",
         ur: 'یہ بالکل درست نہیں تھا، اور کوئی بات نہیں۔ آئیں دوبارہ کوشش کریں۔',
       }
-      setActiveHint(hint || fallbackHint)
+      const active = hint || fallbackHint
+      setActiveHint(active)
       setStage('CORRECT_ME')
+
+      // Speak gentle correction
+      speak(active.ur)
     }
   }
 
   function retryStep() {
     setActiveHint(null)
     setStage(isSelfPractice ? 'DO_IT_MYSELF' : 'LET_ME_TRY')
+    speak(currentStep.instruction_ur)
   }
 
   function restartLesson() {
     setStepIndex(0)
     setIsSelfPractice(false)
+    setGuidedMode(false)
     setStage('SHOW_ME')
     setActiveHint(null)
     setLastSuccess(null)
+    stop()
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <button
-        onClick={() => onNavigate('learn')}
-        className="flex min-h-12 w-fit items-center gap-2 font-medium text-action hover:underline"
-      >
-        <ArrowLeft size={20} aria-hidden="true" />
-        <BilingualText as="span" en="Back to Learn & Practise" ur="واپس سیکھیں اور مشق کریں" />
-      </button>
+    <div className="flex flex-col gap-3 md:gap-5">
+      {/* Top Bar: Back Link & Stage Indicator */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <button
+          onClick={() => {
+            stop()
+            onNavigate('learn')
+          }}
+          className="flex min-h-9 items-center gap-1.5 text-sm font-semibold text-action hover:underline"
+        >
+          <ArrowLeft size={18} aria-hidden="true" />
+          <BilingualText as="span" en="Back to Learn & Practise" ur="واپس سیکھیں اور مشق کریں" />
+        </button>
 
-      {/* Preset Fallback Notice */}
+        {stage !== 'DONE' && (
+          <span className="rounded-full bg-mint-strong px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-primary">
+            {stage === 'SHOW_ME' && 'Stage 1: Show Me / مجھے دکھائیں'}
+            {stage === 'LET_ME_TRY' && 'Stage 2: Let Me Try / اب آپ آزمائیں'}
+            {stage === 'CORRECT_ME' && 'Stage 3: Correct Me / دوستانہ رہنمائی'}
+            {stage === 'DO_IT_MYSELF' && 'Stage 4: Let Me Do It Myself / خود کریں'}
+          </span>
+        )}
+      </div>
+
+      {/* Preset Notice if AI is unavailable */}
       {lesson.source === 'preset' && (
-        <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
-          <AlertCircle className="mt-0.5 shrink-0 text-amber-600" size={20} />
+        <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-2.5 text-amber-900 text-xs">
+          <AlertCircle className="mt-0.5 shrink-0 text-amber-600" size={16} />
           <div>
-            <p className="font-semibold text-sm">
+            <p className="font-semibold">
               {lesson.note_en || 'AI lesson unavailable, showing a sample lesson.'}
             </p>
-            <p lang="ur" dir="rtl" className="urdu font-semibold text-sm mt-0.5">
+            <p lang="ur" dir="rtl" className="urdu font-semibold text-xs">
               {lesson.note_ur || 'اے آئی سبق دستیاب نہیں، نمونہ سبق دکھایا جا رہا ہے۔'}
             </p>
           </div>
         </div>
       )}
 
-      <div className="grid gap-8 lg:grid-cols-5">
-        {/* Left column: Guidance and Confidence Loop Controls */}
-        <div className="flex flex-col gap-5 lg:col-span-2">
-          {/* Lesson Title */}
-          <BilingualText
-            en={lesson.title_en}
-            ur={lesson.title_ur}
-            enClass="text-2xl font-bold text-primary"
-            urClass="text-2xl font-bold text-primary"
-          />
-
-          {/* Progress Indicator */}
+      {/* Speech Voice Not Available Notice (shown ONCE if speech is checked and unavailable) */}
+      {speechChecked && !speechAvailable && (
+        <div className="flex items-start gap-2.5 rounded-xl border border-line bg-surface p-2.5 text-ink text-xs shadow-xs">
+          <AlertTriangle className="mt-0.5 shrink-0 text-action" size={16} />
           <div>
-            <div className="mb-2 flex items-center justify-between text-sm font-semibold text-muted">
-              <span>
-                Step {stepNumber} of {totalSteps}
-              </span>
-              <span lang="ur" dir="rtl" className="urdu">
-                مرحلہ {stepNumber} از {totalSteps}
-              </span>
+            <p className="font-semibold text-primary">
+              Voice is not available on this device. Please read the instructions on screen.
+            </p>
+            <p lang="ur" dir="rtl" className="urdu font-semibold text-xs text-primary">
+              اس ڈیوائس پر اردو آواز دستیاب نہیں۔ براہ کرم اسکرین پر ہدایات پڑھیں۔
+            </p>
+            <p className="mt-0.5 text-[11px] text-muted">
+              Tip: Try Microsoft Edge, or add Urdu speech in Windows language settings / ایج براؤزر آزمائیں یا ونڈوز میں اردو آواز شامل کریں
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Main Player Grid */}
+      <div className="flex flex-col gap-3 lg:grid lg:grid-cols-12 lg:items-start lg:gap-6">
+        {/* Left Column (Desktop) / Top Section (Mobile): Instructions & Controls */}
+        <div className="flex flex-col gap-3 lg:col-span-6">
+          {/* Lesson Title */}
+          <div>
+            <BilingualText
+              en={lesson.title_en}
+              ur={lesson.title_ur}
+              enClass="text-xl md:text-2xl font-bold text-primary leading-tight"
+              urClass="text-lg md:text-xl font-bold text-primary leading-tight"
+            />
+          </div>
+
+          {/* Compact Progress Bar */}
+          <div>
+            <div className="mb-1 flex items-center justify-between text-xs font-semibold text-muted">
+              <span>Step {stepNumber} of {totalSteps}</span>
+              <span lang="ur" dir="rtl" className="urdu text-xs">مرحلہ {stepNumber} از {totalSteps}</span>
             </div>
             <div
               role="progressbar"
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={Math.round((stepNumber / totalSteps) * 100)}
-              className="h-2.5 w-full rounded-full bg-mint-strong"
+              className="h-2 w-full rounded-full bg-mint-strong"
             >
               <div
-                className="h-2.5 rounded-full bg-action transition-all duration-300"
+                className="h-2 rounded-full bg-action transition-all duration-300"
                 style={{ width: `${(stepNumber / totalSteps) * 100}%` }}
               />
             </div>
           </div>
 
-          {/* Stage Label Badge */}
+          {/* Compact Instruction Card with Voice Controls */}
           {stage !== 'DONE' && (
-            <div className="flex items-center gap-2">
-              <span className="rounded-full bg-mint-strong px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
-                {stage === 'SHOW_ME' && 'Stage 1: Show Me / مجھے دکھائیں'}
-                {stage === 'LET_ME_TRY' && 'Stage 2: Let Me Try / اب آپ آزمائیں'}
-                {stage === 'CORRECT_ME' && 'Stage 3: Correct Me / دوستانہ رہنمائی'}
-                {stage === 'DO_IT_MYSELF' && 'Stage 4: Let Me Do It Myself / خود کریں'}
-              </span>
-            </div>
-          )}
-
-          {/* Instruction Card */}
-          {stage !== 'DONE' && stage !== 'CORRECT_ME' && (
-            <div className="rounded-2xl border border-line bg-surface p-5 shadow-xs">
-              <BilingualText
-                en={currentStep.instruction_en}
-                ur={currentStep.instruction_ur}
-                enClass="text-lg text-ink font-medium"
-                urClass="text-xl text-primary font-semibold mt-1"
-              />
-              <VoiceControls text={currentStep.instruction_ur} />
-            </div>
-          )}
-
-          {/* Dynamic Stage Actions */}
-          <div aria-live="polite" className="flex flex-col gap-4">
-            {stage === 'SHOW_ME' && (
-              <div className="flex flex-col gap-3 rounded-2xl bg-amber-50 p-4 border border-amber-200">
-                <BilingualText
-                  en="Look at the glowing highlighted button on the phone screen."
-                  ur="فون اسکرین پر چمکتے ہوئے نمایاں بٹن کو دیکھیں۔"
-                  enClass="text-sm text-amber-900"
-                  urClass="text-sm text-amber-900"
-                />
-                <button
-                  type="button"
-                  onClick={() => setStage('LET_ME_TRY')}
-                  className="min-h-12 w-full rounded-xl bg-action px-5 py-3 font-semibold text-white shadow-xs hover:bg-primary active:scale-[0.98]"
-                >
-                  <BilingualText as="span" center en="Let Me Try" ur="اب میں آزماتا ہوں" />
-                </button>
-              </div>
-            )}
-
-            {stage === 'LET_ME_TRY' && (
-              <div className="rounded-xl border border-line bg-white p-3 text-center text-sm text-muted shadow-xs">
-                <BilingualText
-                  center
-                  en="Now tap the correct button yourself on the phone."
-                  ur="اب فون پر خود صحیح بٹن کو ٹیپ کریں۔"
-                />
-              </div>
-            )}
-
-            {stage === 'DO_IT_MYSELF' && (
-              <div className="rounded-xl border border-mint-strong bg-mint/30 p-3 text-center text-sm text-primary shadow-xs">
-                <BilingualText
-                  center
-                  en="Practise independently without any highlights."
-                  ur="بغیر کسی اشارے کے خود اعتماد سے مشق کریں۔"
-                />
-              </div>
-            )}
-
-            {/* Success message banner during transitions */}
-            {lastSuccess && (
-              <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-emerald-800 animate-fadeIn">
-                <CheckCircle2 size={18} className="shrink-0 text-emerald-600" />
-                <div>
-                  <p className="text-xs font-semibold">{lastSuccess.en}</p>
-                  <p lang="ur" dir="rtl" className="urdu text-xs font-semibold mt-0.5">{lastSuccess.ur}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Correct Me stage: Gentle hint */}
-            {stage === 'CORRECT_ME' && activeHint && (
-              <div className="flex flex-col gap-4 rounded-2xl border border-amber-300 bg-amber-50 p-5 shadow-xs">
-                <div className="flex items-start gap-2">
-                  <AlertCircle className="mt-0.5 shrink-0 text-amber-700" size={20} />
-                  <div>
-                    <BilingualText
-                      en={activeHint.en}
-                      ur={activeHint.ur}
-                      enClass="text-base text-amber-900 font-medium"
-                      urClass="text-lg text-amber-900 font-semibold"
-                    />
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={retryStep}
-                  className="min-h-12 w-full rounded-xl bg-action px-5 py-3 font-semibold text-white shadow-xs hover:bg-primary active:scale-[0.98]"
-                >
-                  <BilingualText as="span" center en="Try Again" ur="دوبارہ کوشش کریں" />
-                </button>
-              </div>
-            )}
-
-            {/* Completed state */}
-            {stage === 'DONE' && (
-              <div className="flex flex-col gap-4 rounded-2xl bg-mint-strong p-6 shadow-sm">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="text-action shrink-0" size={28} />
+            <div className="rounded-xl border border-line bg-surface p-3.5 shadow-xs">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1">
                   <BilingualText
-                    en="You did it!"
-                    ur="آپ نے کر دکھایا!"
-                    enClass="text-2xl font-bold text-primary"
-                    urClass="text-2xl font-bold text-primary"
+                    en={currentStep.instruction_en}
+                    ur={currentStep.instruction_ur}
+                    enClass="text-base text-ink font-semibold"
+                    urClass="text-base text-primary font-bold"
                   />
                 </div>
-                <BilingualText
-                  en="You completed the entire practice lesson including independent trial."
-                  ur="آپ نے آزادانہ مشق سمیت پورا مشقی سبق کامیابی سے مکمل کر لیا ہے۔"
-                  enClass="text-sm text-ink"
-                  urClass="text-base text-ink"
-                />
-                <div className="mt-2 flex flex-col gap-3 sm:flex-row">
+
+                {/* Audio Controls Toolbar */}
+                <div className="flex shrink-0 items-center gap-1.5">
                   <button
                     type="button"
-                    onClick={() => onNavigate('progress')}
-                    className="min-h-12 flex-1 rounded-xl bg-action px-5 py-3 font-semibold text-white shadow-xs hover:bg-primary active:scale-[0.98]"
+                    onClick={replay}
+                    title="Repeat voice / دوبارہ سنیں"
+                    aria-label="Repeat Urdu voice"
+                    className="flex h-8 items-center gap-1 rounded-lg border border-line bg-white px-2 text-xs font-medium text-action hover:bg-mint active:scale-95 disabled:opacity-40"
+                    disabled={!speechAvailable}
                   >
-                    <BilingualText as="span" center en="View Progress" ur="کارکردگی دیکھیں" />
+                    <RotateCcw size={14} className={speechStatus === 'speaking' ? 'animate-spin' : ''} />
+                    <span className="hidden sm:inline">Repeat</span>
                   </button>
+
                   <button
                     type="button"
-                    onClick={restartLesson}
-                    className="min-h-12 flex-1 rounded-xl border border-action px-5 py-3 font-semibold text-action hover:bg-mint active:scale-[0.98]"
+                    onClick={toggleMute}
+                    title={isMuted ? 'Unmute voice' : 'Mute voice'}
+                    aria-label={isMuted ? 'Unmute voice' : 'Mute voice'}
+                    className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${
+                      isMuted
+                        ? 'border-danger/30 bg-red-50 text-danger'
+                        : 'border-line bg-white text-action hover:bg-mint'
+                    }`}
                   >
-                    <BilingualText as="span" center en="Practise Again" ur="دوبارہ مشق کریں" />
+                    {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
                   </button>
                 </div>
               </div>
-            )}
-          </div>
+
+              {/* Step 1 Show Me Action Button: "Let Me Try" */}
+              {stage === 'SHOW_ME' && (
+                <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-2.5">
+                  <p className="text-xs font-medium text-amber-900 mb-2">
+                    <span lang="en">Look at the highlighted button on the phone, then tap below:</span>
+                    <br />
+                    <span lang="ur" dir="rtl" className="urdu text-xs block mt-0.5">فون پر نمایاں بٹن دیکھیں، پھر نیچے دبائیں:</span>
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleStartGuidedPractice}
+                    className="flex min-h-11 w-full items-center justify-center rounded-xl bg-action px-4 py-2 font-bold text-white shadow-xs hover:bg-primary active:scale-[0.98]"
+                  >
+                    <BilingualText as="span" center en="Let Me Try" ur="اب میں آزماتا ہوں" />
+                  </button>
+                </div>
+              )}
+
+              {/* Guided Mode Info Badge */}
+              {stage === 'LET_ME_TRY' && !isSelfPractice && (
+                <div className="mt-2 text-center text-xs font-semibold text-action">
+                  <span>Tap the highlighted button directly on the simulated phone / فون پر نمایاں بٹن دبائیں</span>
+                </div>
+              )}
+
+              {/* Self Practice Badge */}
+              {stage === 'DO_IT_MYSELF' && (
+                <div className="mt-2 text-center text-xs font-semibold text-primary">
+                  <span>Practise independently without highlights / بغیر اشارے کے خود کوشش کریں</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Correct Me stage: Gentle Hint & Try Again button */}
+          {stage === 'CORRECT_ME' && activeHint && (
+            <div className="flex flex-col gap-2.5 rounded-xl border border-amber-300 bg-amber-50 p-3.5 shadow-xs">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="mt-0.5 shrink-0 text-amber-700" size={18} />
+                <BilingualText
+                  en={activeHint.en}
+                  ur={activeHint.ur}
+                  enClass="text-sm text-amber-900 font-semibold"
+                  urClass="text-sm text-amber-900 font-bold"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={retryStep}
+                className="min-h-10 w-full rounded-xl bg-action px-4 py-2 font-bold text-white shadow-xs hover:bg-primary active:scale-[0.98]"
+              >
+                <BilingualText as="span" center en="Try Again" ur="دوبارہ کوشش کریں" />
+              </button>
+            </div>
+          )}
+
+          {/* Success Banner */}
+          {lastSuccess && (
+            <div className="flex items-center gap-2 rounded-xl border border-emerald-300 bg-emerald-50 p-2.5 text-emerald-900 animate-fadeIn">
+              <CheckCircle2 size={18} className="shrink-0 text-emerald-600" />
+              <div>
+                <p className="text-xs font-bold">{lastSuccess.en}</p>
+                <p lang="ur" dir="rtl" className="urdu text-xs font-bold">{lastSuccess.ur}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Completed State */}
+          {stage === 'DONE' && (
+            <div className="flex flex-col gap-3 rounded-2xl bg-mint-strong p-4.5 shadow-sm">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="text-action shrink-0" size={24} />
+                <BilingualText
+                  en="You did it!"
+                  ur="آپ نے کر دکھایا!"
+                  enClass="text-xl font-bold text-primary"
+                  urClass="text-xl font-bold text-primary"
+                />
+              </div>
+              <BilingualText
+                en="You completed the entire practice lesson including independent trial."
+                ur="آپ نے آزادانہ مشق سمیت پورا مشقی سبق کامیابی سے مکمل کر لیا ہے۔"
+                enClass="text-xs text-ink"
+                urClass="text-sm text-ink"
+              />
+              <div className="mt-1 flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => onNavigate('progress')}
+                  className="min-h-10 flex-1 rounded-xl bg-action px-4 py-2 text-sm font-bold text-white shadow-xs hover:bg-primary active:scale-[0.98]"
+                >
+                  <BilingualText as="span" center en="View Progress" ur="کارکردگی دیکھیں" />
+                </button>
+                <button
+                  type="button"
+                  onClick={restartLesson}
+                  className="min-h-10 flex-1 rounded-xl border border-action px-4 py-2 text-sm font-bold text-action hover:bg-mint active:scale-[0.98]"
+                >
+                  <BilingualText as="span" center en="Practise Again" ur="دوبارہ مشق کریں" />
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Guidance Disclaimer */}
-          <div className="mt-auto border-t border-line pt-3 text-xs text-muted">
+          <div className="hidden border-t border-line pt-2 text-[11px] text-muted lg:block">
             <p>{lesson.disclaimer_en}</p>
-            <p lang="ur" dir="rtl" className="urdu mt-1">{lesson.disclaimer_ur}</p>
+            <p lang="ur" dir="rtl" className="urdu text-[11px]">{lesson.disclaimer_ur}</p>
           </div>
         </div>
 
-        {/* Right column: Simulated Phone */}
-        <div className="lg:col-span-3">
+        {/* Right Column (Desktop) / Main Area (Mobile): Simulated Phone */}
+        <div className="lg:col-span-6 flex justify-center">
           <PhoneSimulator
             screen={currentStep.screen}
             appName={currentStep.app_name}
@@ -398,6 +491,12 @@ export default function LessonPractice({ onNavigate, lessonData }) {
             interactive={isInteractive}
             onAction={handleButtonAction}
           />
+        </div>
+
+        {/* Mobile Disclaimer (placed at bottom on mobile) */}
+        <div className="border-t border-line pt-2 text-[11px] text-muted lg:hidden text-center">
+          <p>{lesson.disclaimer_en}</p>
+          <p lang="ur" dir="rtl" className="urdu text-[11px]">{lesson.disclaimer_ur}</p>
         </div>
       </div>
     </div>

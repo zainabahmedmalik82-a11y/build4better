@@ -94,61 +94,61 @@ export default function Learn({ onNavigate, onStartLesson }) {
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-4 md:gap-5">
       {/* Page Title */}
       <div>
         <BilingualText
           en="Learn & Practise"
           ur="سیکھیں اور مشق کریں"
-          enClass="text-3xl font-bold text-primary"
-          urClass="text-3xl font-bold text-primary"
+          enClass="text-2xl md:text-3xl font-bold text-primary"
+          urClass="text-2xl md:text-3xl font-bold text-primary"
         />
         <div className="mt-1">
           <BilingualText
             en="Pick a lesson or tell us what you want to learn. Nothing here can go wrong."
             ur="کوئی سبق چنیں یا بتائیں کہ آپ کیا سیکھنا چاہتے ہیں۔ یہاں کچھ بھی خراب نہیں ہو سکتا۔"
-            enClass="text-muted text-base"
-            urClass="text-muted text-base"
+            enClass="text-muted text-sm md:text-base font-medium"
+            urClass="text-muted text-sm md:text-base font-medium"
           />
         </div>
       </div>
 
       {/* AI Practice Generator Box */}
-      <div className="rounded-2xl border-2 border-action/30 bg-gradient-to-br from-white via-surface to-mint/20 p-6 shadow-sm">
-        <div className="flex items-center gap-2 text-action mb-2">
-          <Sparkles size={22} className="shrink-0" />
+      <div className="rounded-2xl border-2 border-action/30 bg-gradient-to-br from-white via-surface to-mint/20 p-4 md:p-5 shadow-sm">
+        <div className="flex items-center gap-2 text-action mb-1.5">
+          <Sparkles size={20} className="shrink-0" />
           <BilingualText
             as="h2"
             en="Tell us what you want help with"
             ur="اپنا مسئلہ بتائیں"
-            enClass="text-xl font-bold text-primary"
-            urClass="text-xl font-bold text-primary"
+            enClass="text-lg md:text-xl font-bold text-primary"
+            urClass="text-lg md:text-xl font-bold text-primary"
           />
         </div>
-        <p className="text-sm text-muted mb-4">
+        <p className="text-xs md:text-sm text-muted font-medium mb-3">
           <span lang="en">Type any smartphone problem or choose an example below. Our AI coach will build a safe, interactive practice phone for you.</span>
           <br />
-          <span lang="ur" dir="rtl" className="urdu text-sm block mt-1">
+          <span lang="ur" dir="rtl" className="urdu text-xs md:text-sm block mt-0.5">
             فون کا کوئی بھی مسئلہ لکھیں یا نیچے دی گئی مثالوں میں سے چنیں۔ ہمارا اے آئی کوچ آپ کے لیے ایک محفوظ مشقی فون تیار کرے گا۔
           </span>
         </p>
 
         {/* Example Chips */}
-        <div className="mb-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted mb-2">
+        <div className="mb-3">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-muted mb-1.5">
             <span lang="en">Quick Examples / فوری مثالیں:</span>
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {EXAMPLE_CHIPS.map((chip, idx) => (
               <button
                 key={idx}
                 type="button"
                 disabled={loading}
                 onClick={() => handleSelectChip(chip)}
-                className="flex flex-col items-start rounded-xl border border-line bg-white px-3.5 py-2 text-left text-xs transition-colors hover:border-action hover:bg-mint/40 active:scale-[0.98] disabled:opacity-50"
+                className="flex flex-col items-start rounded-xl border border-line bg-white px-3 py-1.5 text-left text-xs transition-colors hover:border-action hover:bg-mint/40 active:scale-[0.98] disabled:opacity-50"
               >
                 <span className="font-semibold text-primary">{chip.en}</span>
-                <span lang="ur" dir="rtl" className="urdu text-[11px] text-action font-medium">
+                <span lang="ur" dir="rtl" className="urdu text-[11px] text-action font-semibold leading-tight">
                   {chip.ur}
                 </span>
               </button>
@@ -157,7 +157,7 @@ export default function Learn({ onNavigate, onStartLesson }) {
         </div>
 
         {/* Input Form */}
-        <form onSubmit={handleCreateLesson} className="flex flex-col gap-3">
+        <form onSubmit={handleCreateLesson} className="flex flex-col gap-2.5">
           <div className="relative">
             <textarea
               rows={3}
@@ -169,9 +169,9 @@ export default function Learn({ onNavigate, onStartLesson }) {
                 if (error) setError(null)
               }}
               placeholder="e.g., I want to pay my electricity bill on Easypaisa / مثلاً، مجھے ایزی پیسہ پر بجلی کا بل جمع کروانا ہے"
-              className="w-full rounded-xl border border-line bg-white p-3.5 text-ink text-sm shadow-inner placeholder:text-muted/60 focus:border-action focus:outline-hidden focus:ring-2 focus:ring-action/20 disabled:bg-slate-50"
+              className="w-full rounded-xl border border-line bg-white p-3 text-ink text-sm shadow-inner placeholder:text-muted focus:border-action focus:outline-hidden focus:ring-2 focus:ring-action/20 disabled:bg-slate-50"
             />
-            <div className="mt-1 flex justify-between px-1 text-xs text-muted">
+            <div className="mt-1 flex justify-between px-1 text-xs text-muted font-medium">
               <span>Limit: 500 characters</span>
               <span className={isOverLimit ? 'font-bold text-danger' : ''}>
                 {charCount} / 500
@@ -181,11 +181,11 @@ export default function Learn({ onNavigate, onStartLesson }) {
 
           {/* Error Message Alert */}
           {error && (
-            <div className="flex items-start gap-2.5 rounded-xl border border-danger/30 bg-red-50 p-3.5 text-danger animate-fadeIn">
-              <AlertCircle size={18} className="mt-0.5 shrink-0" />
+            <div className="flex items-start gap-2 rounded-xl border border-danger/30 bg-red-50 p-2.5 text-danger animate-fadeIn">
+              <AlertCircle size={16} className="mt-0.5 shrink-0" />
               <div>
-                <p className="text-xs font-semibold">{error.en}</p>
-                <p lang="ur" dir="rtl" className="urdu text-xs font-semibold mt-0.5">
+                <p className="text-xs font-bold">{error.en}</p>
+                <p lang="ur" dir="rtl" className="urdu text-xs font-bold mt-0.5">
                   {error.ur}
                 </p>
               </div>
@@ -196,16 +196,16 @@ export default function Learn({ onNavigate, onStartLesson }) {
           <button
             type="submit"
             disabled={loading || !problem.trim() || isOverLimit}
-            className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-action px-6 py-3 font-semibold text-white shadow-xs hover:bg-primary active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:w-fit"
+            className="flex min-h-10 items-center justify-center gap-2 rounded-xl bg-action px-5 py-2.5 font-bold text-white shadow-xs hover:bg-primary active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:w-fit"
           >
             {loading ? (
               <>
-                <Loader2 size={18} className="animate-spin" />
+                <Loader2 size={16} className="animate-spin" />
                 <BilingualText as="span" center en="Creating your lesson..." ur="مشق تیار ہو رہی ہے..." />
               </>
             ) : (
               <>
-                <Sparkles size={18} />
+                <Sparkles size={16} />
                 <BilingualText as="span" center en="Create my practice" ur="میری مشق بنائیں" />
               </>
             )}
@@ -214,30 +214,30 @@ export default function Learn({ onNavigate, onStartLesson }) {
       </div>
 
       {/* Preset Example Lesson Section */}
-      <div className="flex flex-col gap-4">
-        <div className="border-b border-line pb-2">
+      <div className="flex flex-col gap-3">
+        <div className="border-b border-line pb-1.5">
           <BilingualText
             as="h2"
             en="Example lesson"
             ur="مثال"
-            enClass="text-xl font-bold text-primary"
-            urClass="text-xl font-bold text-primary"
+            enClass="text-lg font-bold text-primary"
+            urClass="text-lg font-bold text-primary"
           />
         </div>
 
-        <div className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-6 shadow-xs">
-          <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4 shadow-xs">
+          <div className="flex flex-col gap-0.5">
             <BilingualText
               en="How to make a WhatsApp video call"
               ur="واٹس ایپ پر ویڈیو کال کیسے کریں"
-              enClass="text-xl font-semibold text-primary"
-              urClass="text-xl font-semibold text-primary"
+              enClass="text-lg font-bold text-primary"
+              urClass="text-lg font-bold text-primary"
             />
             <BilingualText
               en="Level: Beginner • 2–3 minutes"
               ur="سطح: ابتدائی • 2 سے 3 منٹ"
-              enClass="text-sm text-muted"
-              urClass="text-sm text-muted"
+              enClass="text-xs text-muted font-medium"
+              urClass="text-xs text-muted font-medium"
             />
           </div>
 
@@ -247,19 +247,19 @@ export default function Learn({ onNavigate, onStartLesson }) {
               if (onStartLesson) onStartLesson(null)
               else onNavigate('lesson')
             }}
-            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-action px-5 py-3 font-semibold text-white hover:bg-primary active:scale-[0.98] sm:w-fit"
+            className="flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-action px-4 py-2 font-bold text-white hover:bg-primary active:scale-[0.98] sm:w-fit transition-colors"
           >
-            <PlayCircle size={18} />
+            <PlayCircle size={16} />
             <BilingualText as="span" center en="Start Lesson" ur="سبق شروع کریں" />
           </button>
         </div>
 
-        <div className="rounded-2xl border border-line bg-warning/30 p-4 text-ink">
+        <div className="rounded-xl border border-line bg-warning/30 p-3 text-ink">
           <BilingualText
             en="This is a simulated practice phone. It does not connect to a real WhatsApp or banking account."
             ur="یہ ایک نقلی مشقی فون ہے۔ یہ کسی اصلی واٹس ایپ یا بینک اکاؤنٹ سے نہیں جڑتا۔"
-            enClass="text-xs text-muted"
-            urClass="text-xs text-muted"
+            enClass="text-xs text-muted font-medium"
+            urClass="text-xs text-muted font-medium"
           />
         </div>
       </div>

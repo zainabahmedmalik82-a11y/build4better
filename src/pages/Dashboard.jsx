@@ -7,15 +7,15 @@ export default function Dashboard({ onNavigate }) {
   const { completedCount, totalLessons } = useProgress()
 
   return (
-    <div className="flex flex-col gap-6">
-      <section className="rounded-2xl bg-mint p-6 md:p-10">
+    <div className="flex flex-col gap-4">
+      <section className="rounded-2xl bg-mint p-4.5 md:p-7">
         <BilingualText
           en="Technology, made easier"
           ur="ٹیکنالوجی اب آسان"
-          enClass="text-3xl font-bold text-primary md:text-4xl"
-          urClass="text-3xl font-bold text-primary md:text-4xl"
+          enClass="text-2xl font-bold text-primary md:text-3xl"
+          urClass="text-2xl font-bold text-primary md:text-3xl"
         />
-        <div className="mt-4">
+        <div className="mt-2">
           <BilingualText
             en="Learn and practise safely, at your own pace."
             ur="اپنی رفتار سے محفوظ طریقے سے سیکھیں اور مشق کریں۔"
@@ -23,7 +23,7 @@ export default function Dashboard({ onNavigate }) {
         </div>
       </section>
 
-      <section className="grid gap-6 md:grid-cols-2">
+      <section className="grid gap-3.5 md:grid-cols-2">
         <FeatureCard
           icon={BookOpen}
           titleEn="Learn & Practise" titleUr="سیکھیں اور مشق کریں"
@@ -44,23 +44,25 @@ export default function Dashboard({ onNavigate }) {
 
       <button
         onClick={() => onNavigate('progress')}
-        className="flex min-h-16 items-center justify-between gap-4 rounded-2xl border border-line bg-surface p-5 text-left hover:bg-mint"
+        className="flex min-h-12 items-center justify-between gap-3 rounded-2xl border border-line bg-surface p-3.5 text-left hover:bg-mint transition-colors"
       >
-        <BilingualText as="span" en="My Progress" ur="میری کارکردگی" enClass="font-semibold text-primary" urClass="font-semibold text-primary" />
+        <BilingualText as="span" en="My Progress" ur="میری کارکردگی" enClass="font-bold text-primary" urClass="font-bold text-primary" />
         <span className="flex flex-col text-right">
-          <span lang="en" dir="ltr" className="font-semibold">
+          <span lang="en" dir="ltr" className="font-bold text-sm">
             {completedCount} of {totalLessons} completed
           </span>
-          <span lang="ur" dir="rtl" className="urdu">
+          <span lang="ur" dir="rtl" className="urdu text-xs">
             {totalLessons} میں سے {completedCount} مکمل
           </span>
         </span>
       </button>
 
-      <div className="rounded-2xl bg-warning p-5">
+      <div className="rounded-2xl bg-warning p-3.5">
         <BilingualText
           en="You can practise here without affecting your real phone."
           ur="آپ یہاں مشق کر سکتے ہیں، آپ کے اصلی فون پر کوئی اثر نہیں پڑے گا۔"
+          enClass="text-sm font-medium"
+          urClass="text-sm font-medium"
         />
       </div>
     </div>
