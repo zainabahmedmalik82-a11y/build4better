@@ -18,9 +18,10 @@ For millions of adults, older generations, and non-English speakers in Pakistan,
 ### 1. Learn & Practise with the Confidence Loop
 - **Risk-Free Phone Simulator**: A realistic, interactive smartphone sandbox where learners practise digital actions (such as making a WhatsApp video call) without touching real apps or contacts.
 - **The Confidence Loop Pedagogy**:
-  1. *Demonstrate & Guide*: Clear step-by-step instructions in simple language.
-  2. *Try on Your Own*: The learner repeats the task independently to build muscle memory.
-  3. *Encouraging Corrections*: Non-judgmental, gentle feedback if the wrong button is tapped ("That starts an audio call. To see the other person, choose the video camera").
+  1. *Show Me*: Demonstrates the correct action in simple language.
+  2. *Let Me Try*: The learner interacts with the simulated phone.
+  3. *Correct Me*: Gentle, non-shaming correction if a mistake is made ("That starts an audio call. To see the other person, choose the video camera").
+  4. *Let Me Do It Myself*: The learner retries independently.
 - **Audio Readout**: Integrated Urdu speech playback via the Web Speech API for users who prefer listening over reading.
 - **Progress Tracking**: Local storage keeps track of completed milestones with celebratory encouragement.
 
@@ -51,7 +52,7 @@ Sahaara is designed from the ground up for linguistic accessibility:
 |---|---|
 | **Frontend** | React 19, Vite, Tailwind CSS, Lucide React icons, Web Speech API (`SpeechSynthesis`) |
 | **Backend** | Python 3.10+, FastAPI, Pydantic v2, Groq Python SDK (`groq`), Uvicorn, python-dotenv |
-| **AI Engine** | Groq API (`openai/gpt-oss-120b` / `llama-3.3-70b-versatile` with low reasoning effort) |
+| **AI Engine** | Groq API (model set via GROQ_MODEL in .env, default openai/gpt-oss-120b) |
 | **Testing** | Pytest, HTTPX, FastAPI TestClient |
 
 ---
@@ -60,7 +61,7 @@ Sahaara is designed from the ground up for linguistic accessibility:
 
 1. **"Low" Does Not Mean "Safe"**: The system never certifies any message as "guaranteed safe." All responses carry clear English and Urdu guidance disclaimers.
 2. **Deterministic Risk Floor**: Deterministic heuristic rules always execute first. If a rule detects a credential theft attempt (such as an OTP or PIN request), **the AI model cannot lower the risk level**, preventing prompt injection bypasses.
-3. **Zero Content Logging & Privacy First**: User messages, passwords, OTPs, and phone numbers are **never stored on disk, never logged to terminal/files, and never tracked in browser storage**.
+3. **Zero Content Logging & Privacy First**: Submitted messages are not stored on disk, not logged, and not saved in browser storage.
 4. **Resilient Safe Fallback**: If the Groq AI service is offline, times out, or lacks an API key, the system automatically falls back to deterministic heuristic scanning (`analysis_source: "fallback"`). It never crashes or leaves the user without guidance.
 
 ---
@@ -143,7 +144,7 @@ uvicorn app.main:app --reload --port 8000
 
 ```bash
 # Navigate to project root (in a separate terminal)
-cd "d:\Documents\Build4Better Hackathon"
+cd <project root>
 
 # Configure frontend environment
 cp .env.example .env
@@ -203,7 +204,7 @@ You can test the Scam Detective with these sample messages:
 
 ## Known Limitations
 
-- **Simulated WhatsApp Lesson**: The current MVP includes the WhatsApp video call lesson. Other apps (Easypaisa, JazzCash, YouTube) are simulated in future lesson modules.
+- **Simulated Lessons**: The MVP includes one tutorial (How to Make a WhatsApp Video Call). It runs on a simulated phone, not real WhatsApp. More tutorials are planned.
 - **Browser Speech Synthesis**: Voice audio playback depends on the speech synthesis voices installed in the user's browser/OS.
 - **LLM Quota**: Groq Cloud free tier limits apply when performing high volumes of AI scam scans (the service automatically degrades to heuristic fallback if quota is exceeded).
 
@@ -211,7 +212,6 @@ You can test the Scam Detective with these sample messages:
 
 ## Future Vision
 
-1. **Universal In-App AI Helper**: A lightweight accessibility overlay providing real-time audio guidance inside third-party applications (mobile banking, public utilities, emergency services).
-2. **Expanded Lesson Library**: Step-by-step interactive practice for utility bill payments, biometrics, ridesharing, and privacy settings.
-3. **Local Dialect Support**: Voice interaction in regional Pakistani languages including Punjabi, Sindhi, Pashto, and Balochi.
-4. **Community Fraud Database**: Privacy-preserving scam pattern intelligence shared across local consumer protection groups.
+1. **AI Helper**: An AI helper that takes a user's problem and guides them step by step through any app.
+2. **More Tutorials**: Additional interactive tutorials for everyday essential tasks (e.g., banking apps).
+3. **More Local-Language Support**: Expanding voice and interface support to additional local languages.
