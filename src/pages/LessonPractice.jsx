@@ -4,6 +4,7 @@ import BilingualText from '../components/BilingualText'
 import PhoneSimulator from '../components/PhoneSimulator'
 import useProgress from '../hooks/useProgress'
 import { lesson } from '../data/lessonData'
+import VoiceControls from '../components/VoiceControls'
 
 const { steps, retry, corrections } = lesson
 
@@ -125,7 +126,9 @@ export default function LessonPractice({ onNavigate }) {
               <BilingualText
                 en={current.en} ur={current.ur}
                 enClass="text-lg text-muted" urClass="text-2xl font-semibold text-primary"
+    
               />
+              <VoiceControls text={current.ur} />
             </div>
           )}
 
