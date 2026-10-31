@@ -8,6 +8,11 @@ from app.services.groq_service import (
     GroqUnavailableError,
     analyze_with_groq,
 )
+from app.services.lesson_service import (
+    generate_lesson,
+    generate_lesson_with_groq,
+    get_preset_lesson,
+)
 from app.services.scam_service import (
     DEFAULT_SAFE_STEPS,
     analyze_message,
@@ -24,4 +29,7 @@ __all__ = [
     "analyze_message",
     "analyze_with_groq",
     "build_fallback_response",
+    "generate_lesson",
+    "generate_lesson_with_groq",
+    "get_preset_lesson",
 ]

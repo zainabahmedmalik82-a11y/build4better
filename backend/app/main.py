@@ -5,7 +5,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.core.config import settings
+from app.schemas.lesson import LessonRequest, LessonResponse
 from app.schemas.scam import Indicator, RiskLevel, ScamAnalyzeRequest, ScamAnalyzeResponse
+from app.services.lesson_service import generate_lesson
 from app.services.scam_service import analyze_message
 
 logger = logging.getLogger(__name__)
@@ -79,3 +81,13 @@ async def health_check():
 async def analyze_scam(payload: ScamAnalyzeRequest) -> ScamAnalyzeResponse:
     """Analyze a suspicious message for scam indicators with AI and deterministic fallback."""
     return analyze_message(payload.message)
+
+
+@app.post(
+    "/api/learn/generate",
+    response_model=LessonResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def create_lesson(payload: LessonRequest) -> LessonResponse:
+    """Generate an interactive smartphone practice lesson based on a user's problem."""
+    return generate_lesson(payload.problem)
