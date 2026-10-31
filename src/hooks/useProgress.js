@@ -13,10 +13,15 @@ function read() {
 export default function useProgress() {
   const [progress, setProgress] = useState(read)
 
-  const markComplete = useCallback((lessonId) => {
+  const markComplete = useCallback((lessonId, meta = {}) => {
     const next = {
       ...read(),
-      [lessonId]: { status: 'completed', completedAt: new Date().toISOString() },
+      [lessonId]: {
+        status: 'completed',
+        completedAt: new Date().toISOString(),
+        titleEn: meta.titleEn || meta.title_en || 'Interactive Lesson',
+        titleUr: meta.titleUr || meta.title_ur || 'مشقی سبق',
+      },
     }
     try {
       localStorage.setItem(PROGRESS_KEY, JSON.stringify(next))
@@ -27,8 +32,8 @@ export default function useProgress() {
   }, [])
 
   const completedCount = Object.values(progress).filter(
-    (p) => p.status === 'completed'
+    (p) => p && p.status === 'completed'
   ).length
 
-  return { progress, markComplete, completedCount, totalLessons: 1 }
+  return { progress, markComplete, completedCount, totalLessons: Math.max(1, completedCount) }
 }

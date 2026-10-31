@@ -8,12 +8,18 @@ import MyProgress from './pages/MyProgress'
 
 export default function App() {
   const [page, setPage] = useState('home')
+  const [currentLesson, setCurrentLesson] = useState(null)
+
+  function handleStartLesson(lessonData) {
+    setCurrentLesson(lessonData)
+    setPage('lesson')
+  }
 
   return (
     <AppShell page={page} onNavigate={setPage}>
       {page === 'home' && <Dashboard onNavigate={setPage} />}
-      {page === 'learn' && <Learn onNavigate={setPage} />}
-      {page === 'lesson' && <LessonPractice onNavigate={setPage} />}
+      {page === 'learn' && <Learn onNavigate={setPage} onStartLesson={handleStartLesson} />}
+      {page === 'lesson' && <LessonPractice onNavigate={setPage} lessonData={currentLesson} />}
       {page === 'scam' && <ScamDetective />}
       {page === 'progress' && <MyProgress onNavigate={setPage} />}
     </AppShell>
