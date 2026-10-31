@@ -1,5 +1,5 @@
 import json
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import groq
 from groq import Groq
@@ -84,18 +84,23 @@ def analyze_with_groq(
     """
     groq_client = client if client is not None else get_groq_client()
 
+    create_kwargs: Dict[str, Any] = {
+        "model": settings.GROQ_MODEL,
+        "messages": [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": build_user_prompt(message)},
+        ],
+        "response_format": {"type": "json_object"},
+        "temperature": 0.1,
+        "max_tokens": settings.GROQ_MAX_TOKENS,
+        "timeout": settings.GROQ_TIMEOUT_SECONDS,
+    }
+
+    if settings.GROQ_REASONING_EFFORT:
+        create_kwargs["reasoning_effort"] = settings.GROQ_REASONING_EFFORT
+
     try:
-        response = groq_client.chat.completions.create(
-            model=settings.GROQ_MODEL,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": build_user_prompt(message)},
-            ],
-            response_format={"type": "json_object"},
-            temperature=0.1,
-            max_tokens=1024,
-            timeout=15.0,
-        )
+        response = groq_client.chat.completions.create(**create_kwargs)
     except groq.APITimeoutError as exc:
         raise GroqTimeoutError("Groq API request timed out.") from exc
     except groq.RateLimitError as exc:
@@ -118,6 +123,8 @@ def analyze_with_groq(
         raise GroqInvalidResponseError("Failed to parse Groq response as valid JSON.") from exc
 
     try:
-        return ScamAnalyzeResponse.model_validate(data)
+        parsed_response = ScamAnalyzeResponse.model_validate(data)
+        parsed_response.analysis_source = "ai"
+        return parsed_response
     except ValidationError as exc:
         raise GroqInvalidResponseError(f"Groq JSON failed schema validation: {exc.error_count()} errors.") from exc

@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Literal
 from pydantic import BaseModel, Field, field_validator
 
 from app.core.config import settings
@@ -73,4 +74,8 @@ class ScamAnalyzeResponse(BaseModel):
     disclaimer_ur: str = Field(
         ...,
         description="Guidance disclaimer in Urdu.",
+    )
+    analysis_source: Literal["ai", "fallback"] = Field(
+        default="ai",
+        description="Source of the analysis: 'ai' or 'fallback'.",
     )

@@ -1,3 +1,4 @@
+import logging
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -5,6 +6,9 @@ from fastapi.responses import JSONResponse
 
 from app.core.config import settings
 from app.schemas.scam import Indicator, RiskLevel, ScamAnalyzeRequest, ScamAnalyzeResponse
+from app.services.scam_service import analyze_message
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -40,6 +44,16 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Global catch-all error handler preventing raw tracebacks or secret exposure."""
+    logger.error("Unhandled server exception: %s", type(exc).__name__)
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"detail": "An internal error occurred while processing the request."},
+    )
+
+
 @app.get("/")
 async def root():
     return {
@@ -63,17 +77,5 @@ async def health_check():
     status_code=status.HTTP_200_OK,
 )
 async def analyze_scam(payload: ScamAnalyzeRequest) -> ScamAnalyzeResponse:
-    """Temporary stub endpoint for testing schema validation."""
-    return ScamAnalyzeResponse(
-        risk_level=RiskLevel.UNKNOWN,
-        summary_en="Scam analysis engine is not yet connected (Step 3 stub).",
-        summary_ur="اسکیم کے تجزیے کا انجن ابھی متصل نہیں ہے (مرحلہ 3 کا عارضی جواب)۔",
-        indicators=[],
-        safe_steps=[
-            "Do not share OTPs, PINs, or passwords.",
-            "Do not click on suspicious links.",
-            "Contact official sources directly.",
-        ],
-        disclaimer_en="This analysis is guidance, not a guarantee.",
-        disclaimer_ur="یہ تجزیہ صرف رہنمائی ہے، مکمل ضمانت نہیں۔",
-    )
+    """Analyze a suspicious message for scam indicators with AI and deterministic fallback."""
+    return analyze_message(payload.message)
