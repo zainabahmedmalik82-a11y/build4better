@@ -1,3 +1,4 @@
+import LessonPractice from './pages/LessonPractice'
 import { useState } from 'react'
 import AppShell from './components/AppShell'
 import Dashboard from './pages/Dashboard'
@@ -14,7 +15,7 @@ export default function App() {
     <AppShell page={page} onNavigate={setPage}>
       {page === 'home' && <Dashboard onNavigate={setPage} />}
       {page === 'learn' && <Learn onNavigate={setPage} />}
-      {page === 'lesson' && <Placeholder title="Lesson" />}
+      {page === 'lesson' && <LessonPractice onNavigate={setPage} />}
       {page === 'scam' && <Placeholder title="Scam Detective" />}
       {page === 'progress' && <Placeholder title="My Progress" />}
     </AppShell>
