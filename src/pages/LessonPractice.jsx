@@ -482,7 +482,7 @@ export default function LessonPractice({ onNavigate, lessonData }) {
         </div>
 
         {/* Right Column (Desktop) / Main Area (Mobile): Simulated Phone */}
-        <div className="lg:col-span-6 flex justify-center">
+        <div className="lg:col-span-6 flex justify-center w-full">
           <PhoneSimulator
             screen={currentStep.screen}
             appName={currentStep.app_name}
